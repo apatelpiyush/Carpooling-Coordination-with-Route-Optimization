@@ -1,0 +1,50 @@
+ table_name |   column_name   |          data_type          
+------------+-----------------+-----------------------------
+ bookings   | booking_id      | integer
+ bookings   | ride_id         | integer
+ bookings   | rider_id        | integer
+ bookings   | pickup_stop_id  | integer
+ bookings   | drop_stop_id    | integer
+ bookings   | seats_booked    | smallint
+ bookings   | booking_status  | character varying
+ bookings   | booked_at       | timestamp without time zone
+ ratings    | rating_id       | integer
+ ratings    | booking_id      | integer
+ ratings    | rated_by        | integer
+ ratings    | rated_user      | integer
+ ratings    | score           | smallint
+ ratings    | comment         | character varying
+ ratings    | rated_at        | timestamp without time zone
+ rides      | ride_id         | integer
+ rides      | driver_id       | integer
+ rides      | vehicle_id      | integer
+ rides      | source          | character varying
+ rides      | destination     | character varying
+ rides      | departure_time  | timestamp without time zone
+ rides      | available_seats | smallint
+ rides      | price_per_seat  | numeric
+ rides      | status          | character varying
+ rides      | route_embedding | USER-DEFINED
+ rides      | created_at      | timestamp without time zone
+ stops      | stop_id         | integer
+ stops      | ride_id         | integer
+ stops      | sequence_no     | smallint
+ stops      | location_name   | character varying
+ stops      | latitude        | numeric
+ stops      | longitude       | numeric
+ users      | user_id         | integer
+ users      | name            | character varying
+ users      | email           | character varying
+ users      | phone           | character varying
+ users      | password_hash   | character varying
+ users      | is_driver       | boolean
+ users      | created_at      | timestamp without time zone
+ vehicles   | vehicle_id      | integer
+ vehicles   | driver_id       | integer
+ vehicles   | make            | character varying
+ vehicles   | model           | character varying
+ vehicles   | plate_number    | character varying
+ vehicles   | capacity        | smallint
+ vehicles   | color           | character varying
+(46 rows)
+
