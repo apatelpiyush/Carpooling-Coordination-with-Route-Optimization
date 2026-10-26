@@ -4,4 +4,7 @@ __pycache__/
 cookies.txt
 backups/
 env/
-
+driver_cookies.txt
+test_bookings.py
+test_rides.py
+create_test_user.py

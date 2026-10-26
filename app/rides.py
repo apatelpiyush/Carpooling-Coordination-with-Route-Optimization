@@ -43,6 +43,239 @@ def calculate_route_distance(stops):
 
     return total_distance
 
+def calculate_detour_km(original_stops, modified_stops):
+    """
+    Compare original and modified route distances.
+    Stops are ordered (latitude, longitude) pairs.
+    """
+    original_distance = calculate_route_distance(original_stops)
+    modified_distance = calculate_route_distance(modified_stops)
+
+    return {
+        "original_route_km": round(original_distance, 2),
+        "modified_route_km": round(modified_distance, 2),
+        "detour_km": round(
+            modified_distance - original_distance, 2
+        )
+    }
+    
+def find_nearest_stop(stops, point, threshold_km=1.0):
+    """
+    Return the nearest stop index if it is within the threshold.
+    Otherwise, return None.
+    """
+    nearest_index = None
+    nearest_distance = float("inf")
+
+    for i, (lat, lon) in enumerate(stops):
+        distance = calculate_distance_km(
+            lat, lon, point[0], point[1]
+        )
+
+        if distance < nearest_distance:
+            nearest_distance = distance
+            nearest_index = i
+
+    if nearest_distance <= threshold_km:
+        return nearest_index
+
+    return None
+
+
+def insert_passenger_stops(
+    original_stops,
+    pickup_stop,
+    drop_stop,
+    pickup_index,
+    drop_index,
+    threshold_km=1.0
+):
+    """
+    Reuse nearby existing stops or insert new coordinates after
+    the specified original-route indices.
+
+    Indices refer to positions in original_stops.
+    """
+    if len(original_stops) < 2:
+        raise ValueError("Route must contain at least two stops")
+
+    if not 0 <= pickup_index < drop_index < len(original_stops):
+        raise ValueError("Invalid pickup/drop-off indices")
+
+    pickup_existing = find_nearest_stop(
+        original_stops, pickup_stop, threshold_km
+    )
+    drop_existing = find_nearest_stop(
+        original_stops, drop_stop, threshold_km
+    )
+
+    effective_pickup_index = (
+        pickup_existing if pickup_existing is not None else pickup_index
+    )
+    effective_drop_index = (
+        drop_existing if drop_existing is not None else drop_index
+    )
+
+    if effective_pickup_index >= effective_drop_index:
+        raise ValueError(
+            "Pickup must occur before drop-off on the route"
+        )
+
+    additions = {}
+
+    if pickup_existing is None:
+        additions.setdefault(pickup_index, []).append(pickup_stop)
+
+    if drop_existing is None:
+        additions.setdefault(drop_index, []).append(drop_stop)
+
+    modified_stops = []
+
+    for i, stop in enumerate(original_stops):
+        modified_stops.append(stop)
+        modified_stops.extend(additions.get(i, []))
+
+    return modified_stops
+    
+
+def find_best_route_insertion(
+    original_stops,
+    pickup_stop,
+    drop_stop,
+    threshold_km=1.0,
+    max_detour_km=None
+):
+    """
+    Find a low-detour route by reusing nearby stops or inserting new ones.
+
+    Coordinates use (latitude, longitude).
+    New passenger stops are inserted between existing route stops.
+    """
+    if len(original_stops) < 2:
+        raise ValueError("Route must contain at least two stops")
+
+    if not 0 < threshold_km <= 50:
+        raise ValueError("Threshold must be between 0 and 50 km")
+
+    original_distance = calculate_route_distance(original_stops)
+    n = len(original_stops)
+
+
+    def get_choices(point):
+        choices = []
+
+        # Prefer reusing an existing stop when it is nearby.
+        for i, stop in enumerate(original_stops):
+            distance = calculate_distance_km(
+                stop[0], stop[1], point[0], point[1]
+            )
+            if distance <= threshold_km:
+                choices.append({
+                    "type": "existing",
+                    "index": i
+                })
+
+        # Only insert a new stop if no existing stop is close enough.
+        if not choices:
+            for boundary in range(1, n):
+                choices.append({
+                    "type": "new",
+                    "boundary": boundary
+                })
+
+        return choices
+
+    pickup_choices = get_choices(pickup_stop)
+    drop_choices = get_choices(drop_stop)
+    best_result = None
+
+    for pickup_choice in pickup_choices:
+        for drop_choice in drop_choices:
+            route_entries = []
+
+            for boundary in range(n + 1):
+                # Keep pickup before drop if both use the same boundary.
+                if (
+                    pickup_choice["type"] == "new"
+                    and pickup_choice["boundary"] == boundary
+                ):
+                    route_entries.append(("pickup", pickup_stop))
+
+                if (
+                    drop_choice["type"] == "new"
+                    and drop_choice["boundary"] == boundary
+                ):
+                    route_entries.append(("drop", drop_stop))
+
+                if boundary < n:
+                    route_entries.append(
+                        (f"existing_{boundary}", original_stops[boundary])
+                    )
+
+            def get_entry_index(entry_name):
+                for index, (name, _) in enumerate(route_entries):
+                    if name == entry_name:
+                        return index
+                return None
+
+            pickup_name = (
+                f"existing_{pickup_choice['index']}"
+                if pickup_choice["type"] == "existing"
+                else "pickup"
+            )
+            drop_name = (
+                f"existing_{drop_choice['index']}"
+                if drop_choice["type"] == "existing"
+                else "drop"
+            )
+
+            pickup_index = get_entry_index(pickup_name)
+            drop_index = get_entry_index(drop_name)
+
+            # Passenger must board before leaving the ride.
+            if pickup_index is None or drop_index is None:
+                continue
+            if pickup_index >= drop_index:
+                continue
+
+            modified_route = [
+                coordinates for _, coordinates in route_entries
+            ]
+            modified_distance = calculate_route_distance(modified_route)
+            detour = max(0.0, modified_distance - original_distance)
+
+            if (
+                max_detour_km is not None
+                and detour > max_detour_km
+            ):
+                continue
+
+            if (
+                best_result is None
+                or detour < best_result["detour_km"]
+            ):
+                best_result = {
+                    "original_route_km": round(original_distance, 2),
+                    "modified_route_km": round(modified_distance, 2),
+                    "detour_km": round(detour, 2),
+                    "pickup_stop_index": pickup_index,
+                    "drop_stop_index": drop_index,
+                    "modified_route": modified_route,
+                    "pickup_inserted": pickup_choice["type"] == "new",
+                    "drop_inserted": drop_choice["type"] == "new",
+                    "pickup_existing_index": (
+                        pickup_choice["index"]
+                        if pickup_choice["type"] == "existing"
+                        else None
+                    ),
+                    "drop_existing_index": (
+                        drop_choice["index"]
+                        if drop_choice["type"] == "existing"
+                        else None
+                    ),
+                }
+
+    return best_result
 
 @rides_bp.route("/vehicles", methods=["POST"])
 def add_vehicle():
@@ -361,9 +594,19 @@ def match_nearby_rides():
         drop_lon = float(request.args["drop_lon"])
         radius_km = float(request.args.get("radius_km", 5))
 
+        max_detour_arg = request.args.get("max_detour_km")
+        max_detour_km = (
+            float(max_detour_arg)
+            if max_detour_arg is not None
+            else None
+        )
+
     except (KeyError, ValueError):
         return jsonify({
-            "error": "Provide valid pickup_lat, pickup_lon, drop_lat and drop_lon"
+            "error": (
+                "Provide valid pickup_lat, pickup_lon, "
+                "drop_lat and drop_lon"
+            )
         }), 400
 
     if (
@@ -372,9 +615,13 @@ def match_nearby_rides():
         or not -90 <= drop_lat <= 90
         or not -180 <= drop_lon <= 180
         or not 0 < radius_km <= 50
+        or (
+            max_detour_km is not None
+            and not 0 <= max_detour_km <= 500
+        )
     ):
         return jsonify({
-            "error": "Coordinates or radius are out of range"
+            "error": "Coordinates, radius or detour limit are out of range"
         }), 400
 
     try:
@@ -382,42 +629,6 @@ def match_nearby_rides():
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    WITH stop_distances AS (
-                        SELECT
-                            s.stop_id,
-                            s.ride_id,
-                            s.sequence_no,
-                            s.location_name,
-                            s.latitude,
-                            s.longitude,
-
-                            6371 * 2 * ASIN(SQRT(LEAST(1.0,
-                                POWER(SIN(RADIANS(
-                                    s.latitude - %s
-                                ) / 2), 2)
-                                + COS(RADIANS(%s))
-                                * COS(RADIANS(s.latitude))
-                                * POWER(SIN(RADIANS(
-                                    s.longitude - %s
-                                ) / 2), 2)
-                            ))) AS pickup_distance_km,
-
-                            6371 * 2 * ASIN(SQRT(LEAST(1.0,
-                                POWER(SIN(RADIANS(
-                                    s.latitude - %s
-                                ) / 2), 2)
-                                + COS(RADIANS(%s))
-                                * COS(RADIANS(s.latitude))
-                                * POWER(SIN(RADIANS(
-                                    s.longitude - %s
-                                ) / 2), 2)
-                            ))) AS drop_distance_km
-
-                        FROM stops s
-                        WHERE s.latitude IS NOT NULL
-                          AND s.longitude IS NOT NULL
-                    )
-
                     SELECT
                         r.ride_id,
                         r.source,
@@ -425,59 +636,125 @@ def match_nearby_rides():
                         r.departure_time,
                         r.available_seats,
                         r.price_per_seat,
-                        u.name,
-                        p.location_name,
-                        d.location_name,
-                        ROUND(p.pickup_distance_km::numeric, 2),
-                        ROUND(d.drop_distance_km::numeric, 2)
-
+                        u.name
                     FROM rides r
-                    JOIN users u
-                      ON u.user_id = r.driver_id
-
-                    JOIN stop_distances p
-                      ON p.ride_id = r.ride_id
-
-                    JOIN stop_distances d
-                      ON d.ride_id = r.ride_id
-
-                    WHERE p.sequence_no < d.sequence_no
-                      AND p.pickup_distance_km <= %s
-                      AND d.drop_distance_km <= %s
-                      AND r.status = 'scheduled'
+                    JOIN users u ON u.user_id = r.driver_id
+                    WHERE r.status = 'scheduled'
                       AND r.departure_time > CURRENT_TIMESTAMP
                       AND r.available_seats > 0
-
-                    ORDER BY
-                        p.pickup_distance_km
-                        + d.drop_distance_km ASC,
-                        r.departure_time ASC
-                    """,
-                    (
-                        pickup_lat, pickup_lat, pickup_lon,
-                        drop_lat, drop_lat, drop_lon,
-                        radius_km, radius_km
-                    )
+                    ORDER BY r.departure_time ASC
+                    """
                 )
+                rides = cur.fetchall()
 
-                rows = cur.fetchall()
+                matches = []
 
-        matches = [
-            {
-                "ride_id": row[0],
-                "source": row[1],
-                "destination": row[2],
-                "departure_time": row[3].isoformat(),
-                "available_seats": row[4],
-                "price_per_seat": float(row[5]),
-                "driver_name": row[6],
-                "matched_pickup_stop": row[7],
-                "matched_drop_stop": row[8],
-                "pickup_distance_km": float(row[9]),
-                "drop_distance_km": float(row[10])
-            }
-            for row in rows
-        ]
+                for ride in rides:
+                    (
+                        ride_id,
+                        source,
+                        destination,
+                        departure_time,
+                        available_seats,
+                        price_per_seat,
+                        driver_name
+                    ) = ride
+
+                    cur.execute(
+                        """
+                        SELECT
+                            location_name,
+                            latitude,
+                            longitude
+                        FROM stops
+                        WHERE ride_id = %s
+                          AND latitude IS NOT NULL
+                          AND longitude IS NOT NULL
+                        ORDER BY sequence_no
+                        """,
+                        (ride_id,)
+                    )
+
+                    stop_rows = cur.fetchall()
+
+                    if len(stop_rows) < 2:
+                        continue
+
+                    route = [
+                        (float(row[1]), float(row[2]))
+                        for row in stop_rows
+                    ]
+
+                    # Find the best insertion or reuse nearby stops.
+                    
+                    result = find_best_route_insertion(
+                        route,
+                        (pickup_lat, pickup_lon),
+                        (drop_lat, drop_lon),
+                        threshold_km=min(1.0, radius_km),
+                        max_detour_km=max_detour_km
+                    )
+
+                    if result is None:
+                        continue
+
+                    pickup_existing_index = result["pickup_existing_index"]
+                    drop_existing_index = result["drop_existing_index"]
+
+                    pickup_distance = (
+                        0.0 if pickup_existing_index is None
+                        else calculate_distance_km(
+                            *route[pickup_existing_index], pickup_lat, pickup_lon
+                        )
+                    )
+
+                    drop_distance = (
+                        0.0 if drop_existing_index is None
+                        else calculate_distance_km(
+                            *route[drop_existing_index], drop_lat, drop_lon
+                        )
+                    )
+
+                    matches.append({
+                        "ride_id": ride_id,
+                        "source": source,
+                        "destination": destination,
+                        "departure_time": departure_time.isoformat(),
+                        "available_seats": available_seats,
+                        "price_per_seat": float(price_per_seat),
+                        "driver_name": driver_name,
+                        "matched_pickup_stop": (
+                            stop_rows[pickup_existing_index][0]
+                            if pickup_existing_index is not None
+                            else "New pickup stop"
+                        ),
+                        "matched_drop_stop": (
+                            stop_rows[drop_existing_index][0]
+                            if drop_existing_index is not None
+                            else "New drop-off stop"
+                        ),
+                        "proposed_route": [
+                            {
+                                "latitude": lat,
+                                "longitude": lon
+                            }
+                            for lat, lon in result["modified_route"]
+                        ],
+                        "pickup_stop_inserted": result["pickup_inserted"],
+                        "drop_stop_inserted": result["drop_inserted"],
+                        "pickup_distance_km": round(pickup_distance, 2),
+                        "drop_distance_km": round(drop_distance, 2),
+                        "original_route_km": result["original_route_km"],
+                        "modified_route_km": result["modified_route_km"],
+                        "detour_km": result["detour_km"]
+                    })
+
+        matches.sort(
+            key=lambda item: (
+                item["detour_km"],
+                item["departure_time"]
+            )
+        )
 
         return jsonify({
             "count": len(matches),
@@ -485,6 +762,7 @@ def match_nearby_rides():
         }), 200
 
     except Exception:
+        app.logger.exception("Nearby ride matching failed")
         return jsonify({
             "error": "Could not search for nearby rides"
         }), 500

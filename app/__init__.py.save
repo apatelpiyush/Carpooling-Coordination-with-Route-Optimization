@@ -1,0 +1,14 @@
+from app.rides import rides_bp
+import os
+from flask import Flask
+from app.auth import auth
+
+
+def create_app():
+    app = Flask(__name__)
+
+    app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
+    app.register_blueprint(auth)
+app.register_blueprint(rides_bp)
+    return app
+
