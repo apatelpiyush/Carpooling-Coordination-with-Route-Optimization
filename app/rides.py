@@ -1,6 +1,8 @@
 
 from flask import Blueprint, request, jsonify, session
 from app.db import get_db_connection
+from app.route_embeddings import create_request_embedding
+from app.route_embeddings import create_route_embedding
 
 rides_bp = Blueprint("rides", __name__, url_prefix="/api")
 
@@ -377,6 +379,7 @@ def list_my_vehicles():
 from datetime import datetime
 
 
+
 @rides_bp.route("/rides", methods=["POST"])
 def create_ride():
     driver_id = session.get("user_id")
@@ -393,9 +396,16 @@ def create_ride():
     available_seats = data.get("available_seats")
     price_per_seat = data.get("price_per_seat")
 
+    source_lat = data.get("source_lat")
+    source_lon = data.get("source_lon")
+    destination_lat = data.get("destination_lat")
+    destination_lon = data.get("destination_lon")
+
     if not all([
         vehicle_id, source, destination, departure_time,
-        available_seats is not None, price_per_seat is not None
+        available_seats is not None, price_per_seat is not None,
+        source_lat is not None, source_lon is not None,
+        destination_lat is not None, destination_lon is not None
     ]):
         return jsonify({"error": "All ride fields are required"}), 400
 
@@ -407,8 +417,23 @@ def create_ride():
         available_seats = int(available_seats)
         price_per_seat = float(price_per_seat)
         departure = datetime.fromisoformat(departure_time)
+
+        source_lat = float(source_lat)
+        source_lon = float(source_lon)
+        destination_lat = float(destination_lat)
+        destination_lon = float(destination_lon)
+
     except (ValueError, TypeError):
-        return jsonify({"error": "Invalid vehicle, time, seats or price"}), 400
+        return jsonify({"error": "Invalid ride details or coordinates"}), 400
+
+    # Validate coordinates
+    if not (
+        -90 <= source_lat <= 90
+        and -90 <= destination_lat <= 90
+        and -180 <= source_lon <= 180
+        and -180 <= destination_lon <= 180
+    ):
+        return jsonify({"error": "Invalid geographic coordinates"}), 400
 
     if departure.tzinfo is not None:
         return jsonify({
@@ -424,8 +449,21 @@ def create_ride():
     if price_per_seat < 0:
         return jsonify({"error": "Price cannot be negative"}), 400
 
+    # Initial route contains source and destination.
+    initial_stops = [
+        {"latitude": source_lat, "longitude": source_lon},
+        {"latitude": destination_lat, "longitude": destination_lon}
+    ]
+
+    embedding = create_route_embedding(initial_stops)
+
+    vector_literal = "[" + ",".join(
+        str(value) for value in embedding
+    ) + "]"
+
     with get_db_connection() as conn:
         with conn.cursor() as cur:
+
             cur.execute(
                 """
                 SELECT capacity
@@ -434,6 +472,7 @@ def create_ride():
                 """,
                 (vehicle_id, driver_id)
             )
+
             vehicle = cur.fetchone()
 
             if not vehicle:
@@ -446,22 +485,44 @@ def create_ride():
                     "error": "Available seats cannot exceed vehicle capacity"
                 }), 400
 
+            # Create ride and save its embedding.
             cur.execute(
                 """
                 INSERT INTO rides (
                     driver_id, vehicle_id, source, destination,
-                    departure_time, available_seats, price_per_seat
+                    departure_time, available_seats, price_per_seat,
+                    route_embedding
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s::vector)
                 RETURNING ride_id, source, destination, departure_time,
                           available_seats, price_per_seat, status
                 """,
                 (
                     driver_id, vehicle_id, source, destination,
-                    departure, available_seats, price_per_seat
+                    departure, available_seats, price_per_seat,
+                    vector_literal
                 )
             )
+
             ride = cur.fetchone()
+            ride_id = ride[0]
+
+            # Automatically create the initial route stops.
+            cur.execute(
+                """
+                INSERT INTO stops (
+                    ride_id, sequence_no, location_name,
+                    latitude, longitude
+                )
+                VALUES
+                    (%s, 1, %s, %s, %s),
+                    (%s, 2, %s, %s, %s)
+                """,
+                (
+                    ride_id, source, source_lat, source_lon,
+                    ride_id, destination, destination_lat, destination_lon
+                )
+            )
 
     return jsonify({
         "message": "Ride created successfully",
@@ -472,9 +533,11 @@ def create_ride():
             "departure_time": ride[3].isoformat(),
             "available_seats": ride[4],
             "price_per_seat": float(ride[5]),
-            "status": ride[6]
+            "status": ride[6],
+            "embedding_dimensions": len(embedding)
         }
     }), 201
+
 
 
 @rides_bp.route("/rides", methods=["GET"])
@@ -627,6 +690,15 @@ def match_nearby_rides():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                query_embedding = create_request_embedding(
+                    (pickup_lat, pickup_lon),
+                    (drop_lat, drop_lon)
+                )
+
+                vector_literal = "[" + ",".join(
+                    str(value) for value in query_embedding
+                ) + "]"
+
                 cur.execute(
                     """
                     SELECT
@@ -642,9 +714,13 @@ def match_nearby_rides():
                     WHERE r.status = 'scheduled'
                       AND r.departure_time > CURRENT_TIMESTAMP
                       AND r.available_seats > 0
-                    ORDER BY r.departure_time ASC
-                    """
+                      AND r.route_embedding IS NOT NULL
+                    ORDER BY r.route_embedding <-> %s::vector
+                    LIMIT 100
+                    """,
+                    (vector_literal,)
                 )
+
                 rides = cur.fetchall()
 
                 matches = []
@@ -766,3 +842,121 @@ def match_nearby_rides():
         return jsonify({
             "error": "Could not search for nearby rides"
         }), 500
+        
+
+@rides_bp.route("/my-rides", methods=["GET"])
+def list_my_rides():
+    driver_id = session.get("user_id")
+
+    if not driver_id:
+        return jsonify({"error": "Please log in first"}), 401
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT ride_id, source, destination, departure_time,
+                       available_seats, price_per_seat, status
+                FROM rides
+                WHERE driver_id = %s
+                ORDER BY departure_time DESC
+                """,
+                (driver_id,)
+            )
+
+            rows = cur.fetchall()
+
+    return jsonify({
+        "rides": [
+            {
+                "ride_id": row[0],
+                "source": row[1],
+                "destination": row[2],
+                "departure_time": row[3].isoformat(),
+                "available_seats": row[4],
+                "price_per_seat": float(row[5]),
+                "status": row[6]
+            }
+            for row in rows
+        ]
+    }), 200
+
+
+@rides_bp.route("/rides/<int:ride_id>/details", methods=["GET"])
+def get_ride_details(ride_id):
+    if not session.get("user_id"):
+        return jsonify({"error": "Please log in first"}), 401
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    r.ride_id,
+                    r.driver_id,
+                    r.source,
+                    r.destination,
+                    r.departure_time,
+                    r.available_seats,
+                    r.price_per_seat,
+                    r.status,
+                    u.name,
+                    v.make,
+                    v.model,
+                    v.plate_number,
+                    v.capacity,
+                    v.color
+                FROM rides r
+                JOIN users u ON u.user_id = r.driver_id
+                JOIN vehicles v ON v.vehicle_id = r.vehicle_id
+                WHERE r.ride_id = %s
+                """,
+                (ride_id,)
+            )
+
+            ride = cur.fetchone()
+
+            if not ride:
+                return jsonify({"error": "Ride not found"}), 404
+
+            cur.execute(
+                """
+                SELECT location_name, latitude, longitude, sequence_no
+                FROM stops
+                WHERE ride_id = %s
+                ORDER BY sequence_no
+                """,
+                (ride_id,)
+            )
+
+            stops = cur.fetchall()
+
+    return jsonify({
+        "ride": {
+            "ride_id": ride[0],
+            "driver_id": ride[1],
+            "source": ride[2],
+            "destination": ride[3],
+            "departure_time": ride[4].isoformat(),
+            "available_seats": ride[5],
+            "price_per_seat": float(ride[6]),
+            "status": ride[7],
+            "driver_name": ride[8],
+            "vehicle": {
+                "make": ride[9],
+                "model": ride[10],
+                "plate_number": ride[11],
+                "capacity": ride[12],
+                "color": ride[13]
+            },
+            "stops": [
+                {
+                    "name": stop[0],
+                    "latitude": float(stop[1]),
+                    "longitude": float(stop[2]),
+                    "sequence": stop[3]
+                }
+                for stop in stops
+            ]
+        }
+    }), 200

@@ -1,0 +1,145 @@
+
+{% extends "base.html" %}
+
+{% block title %}Find Rides | CarpoolConnect{% endblock %}
+
+{% block content %}
+<section class="rides-page">
+
+    <div class="rides-heading">
+        <p class="dashboard-eyebrow">CARPOOL SEARCH</p>
+        <h1>Find your next ride</h1>
+        <p>Discover available rides and share your journey.</p>
+    </div>
+
+    <form id="ride-search-form" class="ride-search-form">
+        <div class="search-field">
+            <label for="search-source">From</label>
+            <input type="text" id="search-source"
+                   placeholder="Starting location">
+        </div>
+
+        <div class="search-field">
+            <label for="search-destination">To</label>
+            <input type="text" id="search-destination"
+                   placeholder="Destination">
+        </div>
+
+        <button type="submit" class="search-button">
+            Search rides
+        </button>
+    </form>
+
+    <div class="results-heading">
+        <div>
+            <h2>Available rides</h2>
+            <p id="results-count">Search for a route to get started.</p>
+        </div>
+    </div>
+
+    <div id="rides-message" class="rides-message"></div>
+    <div id="rides-results" class="rides-results"></div>
+
+
+<section class="nearby-search-section">
+
+    <div class="nearby-heading">
+        <p class="dashboard-eyebrow">SMART ROUTE MATCHING</p>
+        <h2>Find rides along your route</h2>
+        <p>
+            Find drivers whose journeys are close to your requested
+            pickup and drop-off locations.
+        </p>
+    </div>
+
+    <form id="nearby-search-form" class="nearby-search-form">
+
+        <div class="nearby-location-fields">
+
+            <div class="search-field">
+                <label for="nearby-pickup">Pickup location</label>
+                <div class="location-search">
+                    <input type="text" id="nearby-pickup"
+                           placeholder="Search pickup location" required>
+                    <button type="button" id="search-pickup"
+                            class="small-action">Search</button>
+                </div>
+                <div id="pickup-results" class="location-results"></div>
+                <p id="pickup-selected" class="selected-location">
+                    No pickup selected.
+                </p>
+            </div>
+
+            <div class="search-field">
+                <label for="nearby-drop">Drop-off location</label>
+                <div class="location-search">
+                    <input type="text" id="nearby-drop"
+                           placeholder="Search drop-off location" required>
+                    <button type="button" id="search-drop"
+                            class="small-action">Search</button>
+                </div>
+                <div id="drop-results" class="location-results"></div>
+                <p id="drop-selected" class="selected-location">
+                    No drop-off selected.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="nearby-options">
+            <div class="search-field">
+                <label for="nearby-radius">Maximum stop proximity</label>
+                <select id="nearby-radius">
+                    <option value="0.5">0.5 km</option>
+                    <option value="1" selected>1 km</option>
+                </select>
+            </div>
+
+            <div class="search-field">
+                <label for="nearby-detour">Maximum additional detour</label>
+                <select id="nearby-detour">
+                    <option value="5">5 km</option>
+                    <option value="10" selected>10 km</option>
+                    <option value="15">15 km</option>
+                    <option value="25">25 km</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="nearby-map"></div>
+
+        <p class="map-hint">
+            Search and select both locations to place them on the map.
+        </p>
+
+        <div class="nearby-form-footer">
+            <p id="nearby-message"></p>
+            <button type="submit" class="search-button">
+                Find nearby matches
+            </button>
+        </div>
+
+    </form>
+
+    <div class="results-heading">
+        <h2>Nearby matches</h2>
+        <p id="nearby-count">Select your locations to begin.</p>
+    </div>
+
+    <div id="nearby-results" class="nearby-results"></div>
+
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/rides.css') }}">
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/rides.js') }}"></script>
+{% endblock %}
+

@@ -1,0 +1,82 @@
+
+{% extends "base.html" %}
+
+{% block title %}Login | CarpoolConnect{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-card">
+        <div class="auth-heading">
+            <span class="auth-icon">C</span>
+            <h1>Welcome Back</h1>
+            <p>Login to continue your journey.</p>
+        </div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email"
+                       placeholder="Enter your email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password"
+                       placeholder="Enter your password" required>
+            </div>
+
+            <p id="login-message" class="form-message"></p>
+
+            <button type="submit" class="btn btn-primary auth-submit">
+                Login
+            </button>
+        </form>
+
+        <p class="auth-switch">
+            Don't have an account?
+            <a href="{{ url_for('pages.register_page') }}">Register</a>
+        </p>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const message = document.getElementById("login-message");
+    const button = e.target.querySelector("button[type='submit']");
+
+    button.disabled = true;
+    button.textContent = "Logging in...";
+    message.textContent = "";
+
+    try {
+        const response = await fetch("/auth/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                email: document.getElementById("email").value,
+                password: document.getElementById("password").value
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Login failed");
+        }
+
+        window.location.href = "/dashboard";
+
+    } catch (error) {
+        message.textContent = error.message;
+        message.className = "form-message error";
+    } finally {
+        button.disabled = false;
+        button.textContent = "Login";
+    }
+});
+</script>
+{% endblock %}

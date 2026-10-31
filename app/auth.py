@@ -103,3 +103,38 @@ def login():
 def logout():
     session.clear()
     return jsonify({"message": "Logged out successfully"})
+    
+
+@auth.route("/me", methods=["GET"])
+def current_user():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return jsonify({"error": "Please log in first"}), 401
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT user_id, name, email, phone, is_driver
+                FROM users
+                WHERE user_id = %s
+                """,
+                (user_id,)
+            )
+            user = cur.fetchone()
+
+    if not user:
+        session.clear()
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "user": {
+            "user_id": user[0],
+            "name": user[1],
+            "email": user[2],
+            "phone": user[3],
+            "is_driver": user[4]
+        }
+    }), 200
+

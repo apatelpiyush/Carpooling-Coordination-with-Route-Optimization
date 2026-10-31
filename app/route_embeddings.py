@@ -92,3 +92,15 @@ def update_route_embedding(ride_id):
                 raise ValueError("Ride not found")
 
     return embedding
+    
+def create_request_embedding(pickup, drop):
+    """
+    Create a 16-dimensional query vector using the same
+    normalization and sampling format as route embeddings.
+    """
+    stops = [
+        {"latitude": pickup[0], "longitude": pickup[1]},
+        {"latitude": drop[0], "longitude": drop[1]},
+    ]
+
+    return create_route_embedding(stops)

@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Carpool{% endblock %}</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <header class="navbar">
+        <div class="nav-container">
+
+            <!-- Logo: Dashboard when logged in, Home otherwise -->
+            <a href="{{ url_for('pages.dashboard') if session.get('user_id') else url_for('pages.home') }}"
+               class="brand">
+                <span class="brand-icon">C</span>
+                <span>Carpool<span class="brand-highlight">Connect</span></span>
+            </a>
+
+            <nav class="nav-links">
+
+                {% if session.get('user_id') %}
+
+                    <a href="{{ url_for('pages.dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('pages.rides_page') }}">Find Rides</a>
+
+                    <button id="theme-toggle" class="theme-toggle"
+                            type="button" aria-label="Enable dark mode">
+                        <span id="theme-icon">☾</span>
+                    </button>
+
+                    <button class="nav-button" onclick="logoutUser()">
+                        Logout
+                    </button>
+
+                {% else %}
+
+                    <a href="{{ url_for('pages.home') }}">Home</a>
+
+                    <button id="theme-toggle" class="theme-toggle"
+                            type="button" aria-label="Enable dark mode">
+                        <span id="theme-icon">☾</span>
+                    </button>
+
+                    <a href="{{ url_for('pages.login_page') }}">Login</a>
+                    <a href="{{ url_for('pages.register_page') }}"
+                       class="nav-cta">
+                        Get Started
+                    </a>
+
+                {% endif %}
+
+            </nav>
+
+        </div>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <p>CarpoolConnect</p>
+            <p>Smarter journeys. Shared destinations.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>

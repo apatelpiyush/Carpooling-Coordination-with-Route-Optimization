@@ -1,7 +1,9 @@
 
 from flask import Blueprint, request, jsonify, session
 from app.db import get_db_connection
+from app.route_embeddings import create_route_embedding
 from math import isfinite
+from datetime import datetime
 from .rides import (
     find_best_route_insertion,
     calculate_distance_km,
@@ -204,7 +206,7 @@ def create_booking():
             # Lock the ride to prevent simultaneous overbooking.
             cur.execute(
                 """
-                SELECT driver_id, available_seats, status
+                SELECT driver_id, available_seats, status, departure_time
                 FROM rides
                 WHERE ride_id = %s
                 FOR UPDATE
@@ -216,7 +218,7 @@ def create_booking():
             if not ride:
                 return jsonify({"error": "Ride not found"}), 404
 
-            driver_id, available_seats, status = ride
+            driver_id, available_seats, status, departure_time = ride
 
             if driver_id == rider_id:
                 return jsonify({
@@ -226,6 +228,11 @@ def create_booking():
             if status != "scheduled":
                 return jsonify({
                     "error": "This ride is not available for booking"
+                }), 400
+            
+            if departure_time <= datetime.now():
+                return jsonify({
+                    "error": "This ride has already departed and cannot be booked"
                 }), 400
 
             if seats > available_seats:
@@ -290,37 +297,7 @@ def create_booking():
                     )
                 }), 400
 
-            # Save route changes and obtain the actual stop IDs.
-            pickup_stop_id, drop_stop_id = save_modified_route(
-                cur,
-                ride_id,
-                original_stops,
-                result,
-                pickup,
-                drop,
-            )
-
-            # Create the booking using valid stop IDs.
-            cur.execute(
-                """
-                INSERT INTO bookings
-                    (ride_id, rider_id, pickup_stop_id, drop_stop_id,
-                     seats_booked, booking_status)
-                VALUES (%s, %s, %s, %s, %s, 'confirmed')
-                RETURNING booking_id, booked_at
-                """,
-                (
-                    ride_id,
-                    rider_id,
-                    pickup_stop_id,
-                    drop_stop_id,
-                    seats,
-                )
-            )
-
-            booking = cur.fetchone()
-
-            # Reduce seats in the same transaction.
+            # Reduce seats first, using a conditional atomic update.
             cur.execute(
                 """
                 UPDATE rides
@@ -332,10 +309,84 @@ def create_booking():
                 (seats, ride_id, seats)
             )
 
-            if cur.fetchone() is None:
+            seat_update = cur.fetchone()
+
+            if seat_update is None:
                 return jsonify({
                     "error": "Not enough seats available"
                 }), 400
+
+            # Save route changes and obtain the actual stop IDs.
+            pickup_stop_id, drop_stop_id = save_modified_route(
+                cur,
+                ride_id,
+                original_stops,
+                result,
+                pickup,
+                drop,
+            )
+            
+            # Regenerate the route embedding using the updated stops.
+            cur.execute(
+                """
+                SELECT latitude, longitude
+                FROM stops
+                WHERE ride_id = %s
+                ORDER BY sequence_no
+                """,
+                (ride_id,)
+            )
+
+            updated_stops = [
+                {"latitude": row[0], "longitude": row[1]}
+                for row in cur.fetchall()
+            ]
+
+            embedding = create_route_embedding(updated_stops)
+
+            vector_literal = "[" + ",".join(
+                str(value) for value in embedding
+            ) + "]"
+
+            cur.execute(
+                """
+                UPDATE rides
+                SET route_embedding = %s::vector
+                WHERE ride_id = %s
+                """,
+                (vector_literal, ride_id)
+            )
+            
+            # Create the booking using valid stop IDs.
+            # Create the booking and record which stops were newly inserted.
+            cur.execute(
+                """
+                INSERT INTO bookings
+                    (
+                        ride_id,
+                        rider_id,
+                        pickup_stop_id,
+                        drop_stop_id,
+                        seats_booked,
+                        booking_status,
+                        pickup_stop_inserted,
+                        drop_stop_inserted
+                    )
+                VALUES (%s, %s, %s, %s, %s, 'confirmed', %s, %s)
+                RETURNING booking_id, booked_at
+                """,
+                (
+                    ride_id,
+                    rider_id,
+                    pickup_stop_id,
+                    drop_stop_id,
+                    seats,
+                    result["pickup_inserted"],
+                    result["drop_inserted"],
+                )
+            )
+
+            booking = cur.fetchone()
 
     return jsonify({
         "message": "Booking successful",
@@ -456,6 +507,98 @@ def cancel_booking(booking_id):
 
             if not cur.fetchone():
                 return jsonify({"error": "Booking has already changed"}), 409
+                
+            # Find the stops associated with this booking.
+            cur.execute(
+                """
+                SELECT pickup_stop_id, drop_stop_id,
+                       pickup_stop_inserted, drop_stop_inserted
+                FROM bookings
+                WHERE booking_id = %s
+                """,
+                (booking_id,)
+            )
+            pickup_id, drop_id, pickup_inserted, drop_inserted = cur.fetchone()
+
+            # Lock and read the current route.
+            cur.execute(
+                """
+                SELECT stop_id, sequence_no
+                FROM stops
+                WHERE ride_id = %s
+                ORDER BY sequence_no
+                FOR UPDATE
+                """,
+                (ride_id,)
+            )
+            route_stops = cur.fetchall()
+
+            # Only remove stops that this booking inserted and no other
+            # confirmed booking references.
+            for stop_id, was_inserted in (
+                (pickup_id, pickup_inserted),
+                (drop_id, drop_inserted),
+            ):
+                if not was_inserted:
+                    continue
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM bookings
+                    WHERE (pickup_stop_id = %s OR drop_stop_id = %s)
+                      AND booking_status = 'confirmed'
+                      AND booking_id <> %s
+                    """,
+                    (stop_id, stop_id, booking_id)
+                )
+
+                if cur.fetchone()[0] == 0:
+                    # Preserve the first and last route stops.
+                    if route_stops and stop_id not in (
+                        route_stops[0][0], route_stops[-1][0]
+                    ):
+                        # Do not delete stops referenced by booking history.
+                        # Preserve foreign-key integrity.
+                        cur.execute(
+                            """
+                            SELECT COUNT(*)
+                            FROM bookings
+                            WHERE pickup_stop_id = %s OR drop_stop_id = %s
+                            """,
+                            (stop_id, stop_id)
+                        )
+
+                        if cur.fetchone()[0] == 0:
+                            cur.execute(
+                                "DELETE FROM stops WHERE stop_id = %s AND ride_id = %s",
+                                (stop_id, ride_id)
+                            )
+
+            # Renumber stops without violating the unique sequence constraint.
+            cur.execute(
+                """
+                SELECT stop_id, sequence_no
+                FROM stops
+                WHERE ride_id = %s
+                ORDER BY sequence_no
+                FOR UPDATE
+                """,
+                (ride_id,)
+            )
+            remaining_stops = cur.fetchall()
+
+            for stop_id, sequence_no in remaining_stops:
+                cur.execute(
+                    "UPDATE stops SET sequence_no = %s WHERE stop_id = %s",
+                    (-sequence_no, stop_id)
+                )
+
+            for new_sequence, (stop_id, _) in enumerate(remaining_stops, start=1):
+                cur.execute(
+                    "UPDATE stops SET sequence_no = %s WHERE stop_id = %s",
+                    (new_sequence, stop_id)
+                )
 
             cur.execute(
                 """
@@ -465,5 +608,36 @@ def cancel_booking(booking_id):
                 """,
                 (seats, ride_id)
             )
+            
+            # Refresh the embedding from the current route.
+            cur.execute(
+                """
+                SELECT latitude, longitude
+                FROM stops
+                WHERE ride_id = %s
+                ORDER BY sequence_no
+                """,
+                (ride_id,)
+            )
+
+            updated_stops = [
+                {"latitude": row[0], "longitude": row[1]}
+                for row in cur.fetchall()
+            ]
+
+            if len(updated_stops) >= 2:
+                embedding = create_route_embedding(updated_stops)
+                vector_literal = "[" + ",".join(
+                    str(value) for value in embedding
+                ) + "]"
+
+                cur.execute(
+                    """
+                    UPDATE rides
+                    SET route_embedding = %s::vector
+                    WHERE ride_id = %s
+                    """,
+                    (vector_literal, ride_id)
+                )
 
     return jsonify({"message": "Booking cancelled and seats restored"}), 200

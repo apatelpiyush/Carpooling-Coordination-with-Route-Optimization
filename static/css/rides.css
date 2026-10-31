@@ -1,0 +1,493 @@
+
+.rides-page {
+    max-width: 1100px;
+    margin: 45px auto 70px;
+    padding: 0 24px;
+}
+
+.rides-heading {
+    margin-bottom: 28px;
+}
+
+.rides-heading h1 {
+    color: var(--text);
+    font-size: 29px;
+    margin: 8px 0;
+}
+
+.rides-heading > p:last-child {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.ride-search-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 14px;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.search-field label {
+    display: block;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 7px;
+}
+
+.search-field input {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--background);
+    color: var(--text);
+    font-size: 13px;
+}
+
+.search-field input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.search-button {
+    align-self: end;
+    padding: 11px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.search-button:hover {
+    opacity: 0.9;
+}
+
+.results-heading {
+    margin: 35px 0 15px;
+}
+
+.results-heading h2 {
+    color: var(--text);
+    font-size: 19px;
+}
+
+.results-heading p {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.rides-results {
+    display: grid;
+    gap: 12px;
+}
+
+.ride-result {
+    display: grid;
+    grid-template-columns: 1.5fr 2fr auto;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+}
+
+.ride-route {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ride-route div {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.ride-location-label {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.ride-route strong {
+    color: var(--text);
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.ride-arrow {
+    color: var(--accent);
+}
+
+.ride-information {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ride-information div {
+    display: grid;
+    gap: 5px;
+}
+
+.ride-information span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.ride-information strong {
+    color: var(--text);
+    font-size: 12px;
+}
+
+.ride-view-link {
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 11px;
+    font-size: 12px;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.ride-view-link:hover {
+    border-color: var(--accent);
+}
+
+.rides-empty {
+    text-align: center;
+    padding: 35px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    font-size: 13px;
+}
+
+.rides-message {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+
+@media (max-width: 850px) {
+    .ride-result {
+        grid-template-columns: 1fr auto;
+    }
+
+    .ride-route {
+        grid-column: 1 / -1;
+    }
+
+    .ride-information {
+        grid-column: 1;
+    }
+}
+
+@media (max-width: 550px) {
+    .rides-page {
+        padding: 0 16px;
+        margin-top: 28px;
+    }
+
+    .ride-search-form {
+        grid-template-columns: 1fr;
+    }
+
+    .search-button {
+        width: 100%;
+    }
+
+    .ride-result {
+        grid-template-columns: 1fr;
+    }
+
+    .ride-information {
+        grid-column: 1;
+    }
+
+    .ride-view-link {
+        justify-self: start;
+    }
+}
+
+
+.nearby-search-section {
+    margin-top: 55px;
+    padding-top: 35px;
+    border-top: 1px solid var(--border);
+}
+
+.nearby-heading {
+    margin-bottom: 22px;
+}
+
+.nearby-heading h2 {
+    color: var(--text);
+    font-size: 22px;
+    margin: 8px 0;
+}
+
+.nearby-heading p:last-child {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.nearby-search-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.nearby-location-fields,
+.nearby-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.nearby-options {
+    margin-top: 18px;
+    max-width: 600px;
+}
+
+.nearby-options select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--background);
+    color: var(--text);
+}
+
+#nearby-map {
+    height: 340px;
+    width: 100%;
+    margin-top: 20px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    z-index: 1;
+}
+
+.nearby-form-footer,
+.nearby-result-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+#nearby-message {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.nearby-results {
+    display: grid;
+    gap: 14px;
+}
+
+.nearby-result {
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+}
+
+.nearby-result-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.nearby-result-heading h3 {
+    color: var(--text);
+    font-size: 15px;
+    margin-top: 6px;
+}
+
+.detour-badge {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    padding: 7px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.nearby-metrics {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 15px;
+    margin-top: 22px;
+    padding: 17px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.nearby-metrics div {
+    display: grid;
+    gap: 6px;
+}
+
+.nearby-metrics span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.nearby-metrics strong {
+    color: var(--text);
+    font-size: 12px;
+}
+
+.nearby-stop-info {
+    margin-top: 15px;
+}
+
+.nearby-stop-info p {
+    color: var(--muted);
+    font-size: 12px;
+    margin: 7px 0;
+}
+
+.nearby-stop-info strong {
+    color: var(--text);
+}
+
+.insertion-info {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+@media (max-width: 750px) {
+    .nearby-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 550px) {
+    .nearby-location-fields,
+    .nearby-options {
+        grid-template-columns: 1fr;
+    }
+
+    .nearby-result-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    #nearby-map {
+        height: 260px;
+    }
+}
+
+/* Nearby matching layout corrections */
+
+.nearby-search-section {
+    max-width: 1100px;
+    margin: 55px auto 0;
+    padding: 35px 24px 45px;
+    border-top: 1px solid var(--border);
+}
+
+.nearby-search-form {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.nearby-location-fields,
+.nearby-options {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.nearby-location-fields > *,
+.nearby-options > * {
+    min-width: 0;
+}
+
+.location-search {
+    display: flex;
+    gap: 8px;
+}
+
+.location-search input {
+    flex: 1;
+    min-width: 0;
+}
+
+.location-search .small-action {
+    flex-shrink: 0;
+    align-self: stretch;
+}
+
+.location-results {
+    display: grid;
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.location-result {
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.location-result:hover {
+    border-color: var(--accent);
+}
+
+.nearby-form-footer {
+    justify-content: flex-end;
+}
+
+#nearby-message {
+    margin-right: auto;
+}
+
+@media (max-width: 600px) {
+    .nearby-search-section {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
+.show-route-button {
+    background: var(--surface);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.show-route-button:hover {
+    border-color: var(--accent);
+    background: var(--background);
+}
+
+.nearby-result {
+    padding: 22px;
+}
+
+.nearby-result-footer {
+    padding-top: 8px;
+}

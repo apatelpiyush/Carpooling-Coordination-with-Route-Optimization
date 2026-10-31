@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | CarpoolConnect{% endblock %}
+
+{% block content %}
+<section class="dashboard-page">
+
+    <div class="dashboard-heading">
+        <div>
+            <p class="dashboard-eyebrow">OVERVIEW</p>
+            <h1>Welcome, <span id="user-name">...</span></h1>
+            <p id="dashboard-subtitle" class="dashboard-subtitle">
+                Loading your dashboard...
+            </p>
+        </div>
+        <span id="user-role" class="role-label"></span>
+    </div>
+
+    <div id="dashboard-error" class="dashboard-error" hidden></div>
+
+    <div class="dashboard-stats" id="dashboard-stats">
+        <!-- Populated by JavaScript -->
+    </div>
+
+    <!-- Driver dashboard -->
+    <section id="driver-section" hidden>
+        
+<div class="publish-ride-section">
+    <div class="dashboard-section-heading">
+        <div>
+                <h2>Publish a ride</h2>
+                <p>Offer available seats on your upcoming journey.</p>
+            </div>
+        </div>
+
+        <form id="ride-form" class="ride-form">
+
+            <div class="ride-form-grid">
+                <div class="form-field">
+                    <label for="ride-vehicle">Select vehicle</label>
+                    <select id="ride-vehicle" required>
+                        <option value="">Loading vehicles...</option>
+                    </select>
+                </div>
+
+                <div class="form-field">
+                    <label for="ride-seats">Available seats</label>
+                    <input type="number" id="ride-seats"
+                           min="1" max="8" required>
+                    <small id="seat-capacity-hint"></small>
+                </div>
+
+                <div class="form-field">
+                    <label for="ride-price">Price per seat (₹)</label>
+                    <input type="number" id="ride-price"
+                           min="0" step="0.01" required>
+                </div>
+
+                <div class="form-field">
+                    <label for="ride-departure">Departure date and time</label>
+                    <input type="datetime-local" id="ride-departure" required>
+                </div>
+            </div>
+
+            <div class="location-selection">
+                <h3>Journey locations</h3>
+
+                <div class="location-fields">
+                    <div class="form-field">
+                        <label for="ride-source">Starting location</label>
+                        <div class="location-search">
+                            <input type="text" id="ride-source"
+                                   placeholder="Search starting location" required>
+                            <button type="button" id="search-source"
+                                    class="small-action">Search</button>
+                        </div>
+                        <div id="source-results" class="location-results"></div>
+                        <p id="source-selected" class="selected-location">
+                            No starting location selected.
+                        </p>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="ride-destination">Destination</label>
+                        <div class="location-search">
+                            <input type="text" id="ride-destination"
+                                   placeholder="Search destination" required>
+                            <button type="button" id="search-destination"
+                                    class="small-action">Search</button>
+                        </div>
+                        <div id="destination-results"
+                             class="location-results"></div>
+                        <p id="destination-selected" class="selected-location">
+                            No destination selected.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="ride-map"></div>
+                <p class="map-hint">
+                    Search for each location and select the correct result.
+                    The map displays your selected points.
+                </p>
+            </div>
+
+            <div class="ride-form-footer">
+                <p id="ride-message"></p>
+                <button type="submit" class="small-action">
+                    Publish ride
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+        <div class="dashboard-section-heading">
+            <div>
+                <h2>Your published rides</h2>
+                <p>Manage the rides you have published.</p>
+            </div>
+        </div>
+
+        <div id="driver-rides" class="dashboard-list"></div>
+
+        <div class="dashboard-section-heading vehicle-heading">
+            <div>
+                <h2>Your vehicles</h2>
+                <p>Vehicles registered to your account.</p>
+            </div>
+        </div>
+
+        
+        <form id="vehicle-form" class="vehicle-form">
+            <div class="vehicle-form-grid">
+                <input type="text" id="vehicle-make"
+                       placeholder="Make (e.g. Hyundai)" required>
+
+                <input type="text" id="vehicle-model"
+                       placeholder="Model (e.g. Creta)" required>
+
+                <input type="text" id="vehicle-plate"
+                       placeholder="Registration number" required>
+
+                <input type="number" id="vehicle-capacity"
+                       placeholder="Seat capacity" min="1" max="8" required>
+
+                <input type="text" id="vehicle-color"
+                       placeholder="Color (optional)">
+            </div>
+
+            <div class="vehicle-form-footer">
+                <p id="vehicle-message"></p>
+                <button type="submit" class="small-action">
+                    Add vehicle
+                </button>
+            </div>
+        </form>
+
+        <div id="driver-vehicles" class="dashboard-list"></div>
+
+    </section>
+
+    <!-- Rider dashboard -->
+    <section id="rider-section" hidden>
+        <div class="dashboard-section-heading">
+            <div>
+                <h2>Your bookings</h2>
+                <p>Track the rides you have booked.</p>
+            </div>
+            <a href="/rides" class="text-link">Find rides →</a>
+        </div>
+
+        <div id="rider-bookings" class="dashboard-list"></div>
+
+        <div class="dashboard-section-heading vehicle-heading">
+            <div>
+                <h2>Available rides</h2>
+                <p>Recently listed rides with available seats.</p>
+            </div>
+            <a href="/rides" class="text-link">View all →</a>
+        </div>
+
+        <div id="available-rides" class="dashboard-list"></div>
+    </section>
+
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
+
+
