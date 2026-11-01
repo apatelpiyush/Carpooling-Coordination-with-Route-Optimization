@@ -1,6 +1,7 @@
 
 let allBookings = [];
 let activeFilter = "all";
+const searchInput = document.getElementById("booking-search");
 
 const bookingsList = document.getElementById("bookings-list");
 const bookingsMessage = document.getElementById("bookings-message");
@@ -27,11 +28,27 @@ function formatDate(value) {
 
 // Filter bookings based on selected status
 function filterBookings() {
-    const filtered = activeFilter === "all"
-        ? allBookings
-        : allBookings.filter(booking =>
-            booking.booking_status.toLowerCase() === activeFilter
-        );
+    const searchTerm = searchInput.value.trim().toLowerCase();
+
+    const filtered = allBookings.filter(booking => {
+
+        // Status filter
+        const matchesStatus =
+            activeFilter === "all" ||
+            booking.booking_status.toLowerCase() === activeFilter;
+
+        // Search filter
+        const searchableText = [
+            booking.booking_id,
+            booking.driver_name,
+            booking.source,
+            booking.destination
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = searchableText.includes(searchTerm);
+
+        return matchesStatus && matchesSearch;
+    });
 
     renderBookings(filtered);
 }
@@ -199,6 +216,7 @@ document.querySelectorAll(".filter-btn").forEach(button => {
 });
 
 
+searchInput.addEventListener("input", filterBookings);
 // Initial loading
 loadBookings();
 

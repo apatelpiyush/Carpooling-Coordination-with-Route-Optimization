@@ -213,4 +213,39 @@
         padding: 9px 8px;
     }
 }
+.booking-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 420px;
+    margin-bottom: 16px;
+    padding: 0 13px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    transition: border-color 0.2s ease;
+}
 
+.booking-search:focus-within {
+    border-color: var(--accent);
+}
+
+.search-icon {
+    color: var(--muted);
+    font-size: 19px;
+}
+
+.booking-search input {
+    width: 100%;
+    padding: 12px 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+}
+
+.booking-search input::placeholder {
+    color: var(--muted);
+}

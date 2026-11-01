@@ -543,3 +543,117 @@ body.dark-mode .auth-card {
         padding: 25px 20px;
     }
 }
+
+/* Notification dropdown */
+
+.notification-wrapper {
+    position: relative;
+}
+
+.notification-toggle {
+    position: relative;
+    width: 42px;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 21px;
+}
+
+.notification-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 20px;
+    background: #dc2626;
+    color: white;
+    font-size: 10px;
+    line-height: 18px;
+    text-align: center;
+}
+
+.notification-panel {
+    position: absolute;
+    top: 48px;
+    right: 0;
+    z-index: 1000;
+    width: 340px;
+    max-height: 420px;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+}
+
+.notification-header button {
+    border: none;
+    background: none;
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.notification-item {
+    padding: 13px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.notification-item:hover {
+    background: var(--background);
+}
+
+.notification-item.unread {
+    background: var(--background);
+    border-left: 3px solid var(--accent);
+}
+
+.notification-item strong {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text);
+    font-size: 13px;
+}
+
+.notification-item p {
+    margin: 0 0 7px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.notification-item small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.notification-empty {
+    padding: 20px 14px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+@media (max-width: 600px) {
+    .notification-panel {
+        position: fixed;
+        top: 145px;
+        right: 12px;
+        width: min(340px, calc(100vw - 24px));
+    }
+}

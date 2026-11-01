@@ -854,15 +854,35 @@ def list_my_rides():
     with get_db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """
-                SELECT ride_id, source, destination, departure_time,
-                       available_seats, price_per_seat, status
-                FROM rides
-                WHERE driver_id = %s
-                ORDER BY departure_time DESC
-                """,
+                "SELECT is_driver FROM users WHERE user_id = %s",
                 (driver_id,)
             )
+            user = cur.fetchone()
+
+            if not user or not user[0]:
+                return jsonify({
+                    "error": "Driver access required"
+                }), 403
+
+            cur.execute("""
+                SELECT
+                    r.ride_id,
+                    r.source,
+                    r.destination,
+                    r.departure_time,
+                    r.available_seats,
+                    r.price_per_seat,
+                    r.status,
+                    (
+                        SELECT COUNT(*)
+                        FROM bookings b
+                        WHERE b.ride_id = r.ride_id
+                          AND b.booking_status = 'confirmed'
+                    ) AS confirmed_bookings
+                FROM rides r
+                WHERE r.driver_id = %s
+                ORDER BY r.departure_time DESC
+            """, (driver_id,))
 
             rows = cur.fetchall()
 
@@ -875,10 +895,179 @@ def list_my_rides():
                 "departure_time": row[3].isoformat(),
                 "available_seats": row[4],
                 "price_per_seat": float(row[5]),
-                "status": row[6]
+                "status": row[6],
+                "confirmed_bookings": row[7]
             }
             for row in rows
         ]
+    }), 200
+
+
+@rides_bp.route("/rides/<int:ride_id>", methods=["PUT"])
+def update_ride(ride_id):
+    driver_id = session.get("user_id")
+
+    if not driver_id:
+        return jsonify({"error": "Please log in first"}), 401
+
+    data = request.get_json(silent=True) or {}
+
+    try:
+        departure_time = datetime.fromisoformat(
+            data.get("departure_time", "")
+        )
+        available_seats = int(data.get("available_seats"))
+        price_per_seat = float(data.get("price_per_seat"))
+
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid ride details"}), 400
+
+    if departure_time.tzinfo is not None:
+        return jsonify({"error": "Use local time without timezone"}), 400
+
+    if departure_time <= datetime.now():
+        return jsonify({"error": "Departure must be in the future"}), 400
+
+    if available_seats < 1 or price_per_seat < 0:
+        return jsonify({"error": "Invalid seats or price"}), 400
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT is_driver
+                FROM users
+                WHERE user_id = %s
+            """, (driver_id,))
+
+            user = cur.fetchone()
+
+            if not user or not user[0]:
+                return jsonify({"error": "Driver access required"}), 403
+
+            cur.execute("""
+                SELECT vehicle_id, status
+                FROM rides
+                WHERE ride_id = %s AND driver_id = %s
+                FOR UPDATE
+            """, (ride_id, driver_id))
+
+            ride = cur.fetchone()
+
+            if not ride:
+                return jsonify({"error": "Ride not found"}), 404
+
+            if ride[1] != "scheduled":
+                return jsonify({"error": "Only scheduled rides can be edited"}), 400
+
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM bookings
+                WHERE ride_id = %s
+                  AND booking_status = 'confirmed'
+            """, (ride_id,))
+
+            if cur.fetchone()[0] > 0:
+                return jsonify({
+                    "error": "This ride has confirmed bookings and cannot be edited."
+                }), 409
+
+            cur.execute("""
+                SELECT capacity
+                FROM vehicles
+                WHERE vehicle_id = %s
+            """, (ride[0],))
+
+            vehicle = cur.fetchone()
+
+            if not vehicle or available_seats > vehicle[0]:
+                return jsonify({
+                    "error": "Available seats exceed vehicle capacity"
+                }), 400
+
+            cur.execute("""
+                UPDATE rides
+                SET departure_time = %s,
+                    available_seats = %s,
+                    price_per_seat = %s
+                WHERE ride_id = %s
+                RETURNING ride_id, departure_time,
+                          available_seats, price_per_seat, status
+            """, (
+                departure_time,
+                available_seats,
+                price_per_seat,
+                ride_id
+            ))
+
+            updated = cur.fetchone()
+
+    return jsonify({
+        "message": "Ride updated successfully",
+        "ride": {
+            "ride_id": updated[0],
+            "departure_time": updated[1].isoformat(),
+            "available_seats": updated[2],
+            "price_per_seat": float(updated[3]),
+            "status": updated[4]
+        }
+    }), 200
+
+
+@rides_bp.route("/rides/<int:ride_id>/cancel", methods=["POST"])
+def cancel_ride(ride_id):
+    driver_id = session.get("user_id")
+
+    if not driver_id:
+        return jsonify({"error": "Please log in first"}), 401
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT is_driver
+                FROM users
+                WHERE user_id = %s
+            """, (driver_id,))
+
+            user = cur.fetchone()
+
+            if not user or not user[0]:
+                return jsonify({"error": "Driver access required"}), 403
+
+            cur.execute("""
+                SELECT status
+                FROM rides
+                WHERE ride_id = %s AND driver_id = %s
+                FOR UPDATE
+            """, (ride_id, driver_id))
+
+            ride = cur.fetchone()
+
+            if not ride:
+                return jsonify({"error": "Ride not found"}), 404
+
+            if ride[0] != "scheduled":
+                return jsonify({"error": "Ride is not available for cancellation"}), 400
+
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM bookings
+                WHERE ride_id = %s
+                  AND booking_status = 'confirmed'
+            """, (ride_id,))
+
+            if cur.fetchone()[0] > 0:
+                return jsonify({
+                    "error": "This ride has confirmed bookings. Cancel passenger bookings first."
+                }), 409
+
+            cur.execute("""
+                UPDATE rides
+                SET status = 'cancelled'
+                WHERE ride_id = %s
+            """, (ride_id,))
+
+    return jsonify({
+        "message": "Ride cancelled successfully"
     }), 200
 
 

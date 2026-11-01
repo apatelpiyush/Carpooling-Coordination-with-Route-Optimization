@@ -52,7 +52,11 @@ def my_bookings_page():
     
 @pages.route("/driver/bookings")
 def driver_bookings_page():
+
     if not session.get("user_id"):
         return redirect(url_for("pages.login_page"))
+
+    if not session.get("is_driver"):
+        return redirect(url_for("pages.dashboard"))
 
     return render_template("driver_bookings.html")

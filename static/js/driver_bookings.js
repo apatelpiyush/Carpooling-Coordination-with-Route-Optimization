@@ -2,6 +2,7 @@
 let allBookings = [];
 let activeFilter = "all";
 
+const searchInput = document.getElementById("booking-search");
 const list = document.getElementById("driver-bookings-list");
 const message = document.getElementById("driver-bookings-message");
 
@@ -27,12 +28,29 @@ function displayDate(value) {
 
 // Filter bookings by status
 function filterDriverBookings() {
+    const searchTerm = searchInput.value.trim().toLowerCase();
 
-    const filtered = activeFilter === "all"
-        ? allBookings
-        : allBookings.filter(b =>
-            b.booking_status.toLowerCase() === activeFilter
-        );
+    const filtered = allBookings.filter(b => {
+
+        // Status filter
+        const matchesStatus =
+            activeFilter === "all" ||
+            b.booking_status.toLowerCase() === activeFilter;
+
+        // Search filter
+        const searchableText = [
+            b.booking_id,
+            b.ride_id,
+            b.passenger_name,
+            b.passenger_email,
+            b.source,
+            b.destination
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = searchableText.includes(searchTerm);
+
+        return matchesStatus && matchesSearch;
+    });
 
     renderDriverBookings(filtered);
 }
@@ -183,7 +201,7 @@ document.querySelectorAll(".filter-btn").forEach(button => {
 
 });
 
-
+searchInput.addEventListener("input", filterDriverBookings);
 // Initial loading
 loadDriverBookings();
 

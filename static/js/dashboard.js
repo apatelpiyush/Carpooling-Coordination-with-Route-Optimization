@@ -84,6 +84,7 @@ async function loadDriverDashboard() {
     ]);
 
     const rides = rideData.rides || [];
+    currentDriverRides = rides;
     const vehicles = vehicleData.vehicles || [];
 
     const upcoming = rides.filter(
@@ -117,6 +118,7 @@ async function loadDriverDashboard() {
     renderVehicles(vehicles);
 }
 
+
 function renderDriverRides(rides) {
     const container = document.getElementById("driver-rides");
 
@@ -125,33 +127,203 @@ function renderDriverRides(rides) {
         return;
     }
 
-    container.innerHTML = rides.map(ride => `
-        <article class="dashboard-item">
-            <div class="item-main">
-                <div class="route-name">
-                    ${escapeHTML(ride.source)}
-                    <span class="route-arrow">→</span>
-                    ${escapeHTML(ride.destination)}
+    container.innerHTML = rides.map(ride => {
+        const hasBookings = Number(ride.confirmed_bookings) > 0;
+        const isScheduled = ride.status === "scheduled";
+        const canManage = isScheduled && !hasBookings;
+
+        return `
+            <article class="dashboard-item driver-ride-item"
+                     data-ride-id="${Number(ride.ride_id)}">
+
+                <div class="item-main">
+                    <div class="route-name">
+                        ${escapeHTML(ride.source)}
+                        <span class="route-arrow">→</span>
+                        ${escapeHTML(ride.destination)}
+                    </div>
+                    <p class="item-meta">
+                        ${formatDate(ride.departure_time)}
+                        · Ride #${Number(ride.ride_id)}
+                    </p>
                 </div>
-                <p class="item-meta">${formatDate(ride.departure_time)}</p>
-            </div>
 
-            <div class="item-detail">
-                <span class="item-detail-label">Available seats</span>
-                <strong>${Number(ride.available_seats)}</strong>
-            </div>
+                <div class="item-detail">
+                    <span class="item-detail-label">Available seats</span>
+                    <strong>${Number(ride.available_seats)}</strong>
+                </div>
 
-            <div class="item-detail">
-                <span class="item-detail-label">Price per seat</span>
-                <strong>₹${Number(ride.price_per_seat).toFixed(2)}</strong>
-            </div>
+                <div class="item-detail">
+                    <span class="item-detail-label">Price per seat</span>
+                    <strong>₹${Number(ride.price_per_seat).toFixed(2)}</strong>
+                </div>
 
-            <span class="status-label">
-                ${escapeHTML(ride.status)}
-            </span>
-        </article>
-    `).join("");
+                <div class="ride-status-actions">
+                    <span class="status-label">
+                        ${escapeHTML(ride.status)}
+                    </span>
+
+                    ${
+                        canManage
+                        ? `
+                            <div class="ride-actions">
+                                <button class="small-action edit-ride-btn"
+                                        data-id="${Number(ride.ride_id)}">
+                                    Edit
+                                </button>
+                                <button class="small-action cancel-ride-btn"
+                                        data-id="${Number(ride.ride_id)}">
+                                    Cancel
+                                </button>
+                            </div>
+                        `
+                        : hasBookings && isScheduled
+                        ? `<span class="ride-restriction">
+                               ${Number(ride.confirmed_bookings)} confirmed booking(s) — editing and cancellation unavailable
+                           </span>`
+                        : ""
+                    }
+                </div>
+
+                <div class="ride-edit-area" id="ride-edit-${Number(ride.ride_id)}"></div>
+            </article>
+        `;
+    }).join("");
+
+    setupDriverRideActions();
 }
+
+function setupDriverRideActions() {
+    const container = document.getElementById("driver-rides");
+
+    if (container.dataset.actionsBound === "true") return;
+    container.dataset.actionsBound = "true";
+
+    container.addEventListener("click", async event => {
+        const editButton = event.target.closest(".edit-ride-btn");
+        const cancelButton = event.target.closest(".cancel-ride-btn");
+
+        if (editButton) {
+            const rideId = Number(editButton.dataset.id);
+            const card = editButton.closest(".driver-ride-item");
+            const ride = currentDriverRides.find(
+                item => Number(item.ride_id) === rideId
+            );
+
+            if (!ride) return;
+
+            const area = card.querySelector(".ride-edit-area");
+
+            area.innerHTML = `
+                <form class="ride-edit-form" data-id="${rideId}">
+                    <label>
+                        Departure time
+                        <input type="datetime-local"
+                               name="departure_time"
+                               value="${escapeHTML(ride.departure_time.slice(0, 16))}"
+                               required>
+                    </label>
+
+                    <label>
+                        Available seats
+                        <input type="number" name="available_seats"
+                               min="1" max="8"
+                               value="${Number(ride.available_seats)}" required>
+                    </label>
+
+                    <label>
+                        Price per seat (₹)
+                        <input type="number" name="price_per_seat"
+                               min="0" step="0.01"
+                               value="${Number(ride.price_per_seat)}" required>
+                    </label>
+
+                    <div class="ride-edit-actions">
+                        <button type="submit" class="small-action">Save changes</button>
+                        <button type="button" class="small-action close-edit-btn">Close</button>
+                    </div>
+                    <p class="ride-action-message" role="status"></p>
+                </form>
+            `;
+            return;
+        }
+
+        if (event.target.closest(".close-edit-btn")) {
+            event.target.closest(".ride-edit-area").innerHTML = "";
+            return;
+        }
+
+        if (cancelButton) {
+            const rideId = Number(cancelButton.dataset.id);
+
+            if (!confirm(`Cancel ride #${rideId}? This action cannot be undone.`)) {
+                return;
+            }
+
+            cancelButton.disabled = true;
+
+            try {
+                await apiRequest(`/api/rides/${rideId}/cancel`, "POST");
+                await loadDriverDashboard();
+            } catch (error) {
+                alert(error.message);
+                cancelButton.disabled = false;
+            }
+        }
+    });
+
+    container.addEventListener("submit", async event => {
+        const form = event.target.closest(".ride-edit-form");
+        if (!form) return;
+
+        event.preventDefault();
+
+        const rideId = Number(form.dataset.id);
+        const message = form.querySelector(".ride-action-message");
+        const submitButton = form.querySelector('[type="submit"]');
+
+        const payload = {
+            departure_time: form.elements.departure_time.value,
+            available_seats: Number(form.elements.available_seats.value),
+            price_per_seat: Number(form.elements.price_per_seat.value)
+        };
+
+        submitButton.disabled = true;
+        message.textContent = "Saving changes...";
+
+        try {
+            await apiRequest(`/api/rides/${rideId}`, "PUT", payload);
+            await loadDriverDashboard();
+        } catch (error) {
+            message.textContent = error.message;
+            submitButton.disabled = false;
+        }
+    });
+}
+
+let currentDriverRides = [];
+
+async function apiRequest(url, method, body = null) {
+    const options = {
+        method,
+        headers: {}
+    };
+
+    if (body !== null) {
+        options.headers["Content-Type"] = "application/json";
+        options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(url, options);
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || "Request failed.");
+    }
+
+    return data;
+}
+
 
 function renderVehicles(vehicles) {
     const container = document.getElementById("driver-vehicles");

@@ -454,3 +454,118 @@
     }
 }
 
+/* Driver ride management */
+
+.driver-ride-item {
+    grid-template-columns: minmax(180px, 2fr) 1fr 1fr minmax(150px, auto);
+}
+
+.ride-status-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.ride-actions,
+.ride-edit-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.ride-actions button,
+.ride-edit-actions button {
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--surface);
+}
+
+.cancel-ride-btn {
+    color: #b42318;
+}
+
+.ride-restriction {
+    max-width: 220px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.ride-edit-area {
+    grid-column: 1 / -1;
+    width: 100%;
+}
+
+.ride-edit-form {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 16px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.ride-edit-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.ride-edit-form input {
+    width: 100%;
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+}
+
+.ride-edit-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.ride-edit-actions {
+    grid-column: 1 / -1;
+}
+
+.ride-action-message {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-size: 12px;
+    margin: 0;
+}
+
+.ride-actions button:disabled,
+.ride-edit-form button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+@media (max-width: 850px) {
+    .driver-ride-item {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .ride-status-actions {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 650px) {
+    .ride-edit-form {
+        grid-template-columns: 1fr;
+    }
+
+    .ride-edit-actions,
+    .ride-action-message {
+        grid-column: 1;
+    }
+}
+

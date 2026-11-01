@@ -31,16 +31,34 @@
                     <a href="{{ url_for('pages.dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('pages.rides_page') }}">Find Rides</a>
 
-                    {% if session.get('is_driver') %}
-                        <a href="{{ url_for('pages.driver_bookings_page') }}">
-                            Passenger Bookings
-                        </a>
-                    {% else %}
-                        <a href="{{ url_for('pages.my_bookings_page') }}">
-                            My Bookings
-                        </a>
-                    {% endif %}
+                    <a href="{{ url_for('pages.my_bookings_page') }}">My Bookings</a>
 
+                    {% if session.get('is_driver') %}
+                        <a href="{{ url_for('pages.driver_bookings_page') }}">Passenger Bookings</a>
+                    {% endif %}
+                        <div class="notification-wrapper">
+                          <button type="button"
+                                  id="notification-toggle"
+                                  class="notification-toggle"
+                                  aria-label="Notifications"
+                                  aria-expanded="false">
+                              <span>♧</span>
+                              <span id="notification-count" class="notification-count" hidden>0</span>
+                          </button>
+
+                          <div id="notification-panel" class="notification-panel" hidden>
+                              <div class="notification-header">
+                                  <strong>Notifications</strong>
+                                  <button type="button" id="refresh-notifications">
+                                      Refresh
+                                  </button>
+                              </div>
+
+                              <div id="notification-list">
+                                  <p class="notification-empty">Loading notifications...</p>
+                              </div>
+                          </div>
+                      </div>
                     <button class="nav-button" onclick="logoutUser()">
                         Logout
                     </button>
@@ -79,6 +97,11 @@
     </footer>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    {% if session.get('user_id') %}
+        <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    {% endif %}
+
     {% block extra_js %}{% endblock %}
 
 </body>

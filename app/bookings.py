@@ -717,3 +717,70 @@ def list_driver_bookings():
         ]
     }), 200
 
+
+@bookings_bp.route("/notifications", methods=["GET"])
+def get_notifications():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return jsonify({"error": "Please log in first"}), 401
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT notification_id, booking_id, ride_id,
+                       title, message, notification_type,
+                       is_read, created_at
+                FROM notifications
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                LIMIT 50
+            """, (user_id,))
+
+            rows = cur.fetchall()
+
+    return jsonify({
+        "notifications": [
+            {
+                "notification_id": row[0],
+                "booking_id": row[1],
+                "ride_id": row[2],
+                "title": row[3],
+                "message": row[4],
+                "notification_type": row[5],
+                "is_read": row[6],
+                "created_at": row[7].isoformat()
+            }
+            for row in rows
+        ],
+        "unread_count": sum(1 for row in rows if not row[6])
+    }), 200
+
+
+@bookings_bp.route(
+    "/notifications/<int:notification_id>/read",
+    methods=["POST"]
+)
+def mark_notification_read(notification_id):
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return jsonify({"error": "Please log in first"}), 401
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE notifications
+                SET is_read = TRUE
+                WHERE notification_id = %s
+                  AND user_id = %s
+                RETURNING notification_id
+            """, (notification_id, user_id))
+
+            updated = cur.fetchone()
+
+    if not updated:
+        return jsonify({"error": "Notification not found"}), 404
+
+    return jsonify({"message": "Notification marked as read"}), 200
+
