@@ -1,0 +1,274 @@
+
+.ride-details-page {
+    max-width: 1100px;
+    margin: 40px auto 70px;
+    padding: 0 24px;
+}
+
+.back-link {
+    display: inline-block;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 25px;
+}
+
+.details-heading {
+    margin-bottom: 25px;
+}
+
+.details-heading h1 {
+    font-size: 26px;
+    color: var(--text);
+    margin: 8px 0;
+}
+
+.details-heading p:last-child {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.details-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 22px;
+    align-items: start;
+}
+
+.details-main {
+    display: grid;
+    gap: 16px;
+}
+
+.details-panel,
+.booking-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px;
+}
+
+.details-panel h2,
+.booking-panel h2 {
+    font-size: 16px;
+    color: var(--text);
+    margin-bottom: 18px;
+}
+
+.detail-row,
+.detail-grid {
+    display: grid;
+    gap: 15px;
+}
+
+.detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.detail-grid div,
+.booking-summary div {
+    display: grid;
+    gap: 6px;
+}
+
+.detail-grid span,
+.booking-summary span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.detail-grid strong,
+.detail-row strong {
+    color: var(--text);
+    font-size: 13px;
+}
+
+.route-stop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0;
+    color: var(--text);
+    font-size: 13px;
+}
+
+.route-stop-number {
+    width: 25px;
+    height: 25px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    font-size: 11px;
+}
+
+#ride-details-map {
+    height: 280px;
+    margin-top: 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    z-index: 1;
+}
+
+.booking-panel {
+    position: sticky;
+    top: 90px;
+}
+
+.booking-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding-bottom: 18px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.booking-summary strong {
+    color: var(--text);
+    font-size: 16px;
+}
+
+.booking-panel .search-field {
+    margin-bottom: 16px;
+}
+
+.booking-panel input,
+.booking-panel select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.booking-panel .small-action {
+    margin-top: 7px;
+}
+
+.booking-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+}
+
+.booking-total strong {
+    font-size: 17px;
+}
+
+.booking-panel .search-button {
+    width: 100%;
+}
+
+.booking-message {
+    font-size: 12px;
+    color: #b45309;
+    margin: 10px 0;
+}
+
+.booking-success {
+    color: #0d9488;
+}
+
+.details-message {
+    padding: 20px 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+@media (max-width: 800px) {
+    .details-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .booking-panel {
+        position: static;
+    }
+}
+
+@media (max-width: 500px) {
+    .ride-details-page {
+        padding: 0 15px;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+/* Booking form control styling */
+
+.booking-panel input,
+.booking-panel select {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 11px;
+    margin-top: 7px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--background);
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+}
+
+.booking-panel input:focus,
+.booking-panel select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.booking-panel label {
+    display: block;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.booking-panel .small-action {
+    display: inline-block;
+    padding: 8px 12px;
+    margin-top: 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.booking-panel .small-action:hover {
+    border-color: var(--accent);
+}
+
+.booking-panel .search-button {
+    display: block;
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--primary);
+    border-radius: 5px;
+    background: var(--primary);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.booking-panel .search-button:hover {
+    opacity: 0.9;
+}
+
+.booking-panel .search-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.selected-location {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+

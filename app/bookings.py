@@ -641,3 +641,79 @@ def cancel_booking(booking_id):
                 )
 
     return jsonify({"message": "Booking cancelled and seats restored"}), 200
+    
+
+@bookings_bp.route("/driver/bookings", methods=["GET"])
+def list_driver_bookings():
+    driver_id = session.get("user_id")
+
+    if not driver_id:
+        return jsonify({"error": "Please log in first"}), 401
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT is_driver FROM users WHERE user_id = %s",
+                (driver_id,)
+            )
+            user = cur.fetchone()
+
+            if not user or not user[0]:
+                return jsonify({
+                    "error": "Only registered drivers can view passenger bookings"
+                }), 403
+
+            cur.execute(
+                """
+                SELECT
+                    b.booking_id,
+                    r.ride_id,
+                    r.source,
+                    r.destination,
+                    r.departure_time,
+                    rider.name,
+                    rider.email,
+                    rider.phone,
+                    b.seats_booked,
+                    b.booking_status,
+                    b.booked_at,
+                    pickup.location_name,
+                    dropoff.location_name
+                FROM bookings b
+                JOIN rides r
+                    ON r.ride_id = b.ride_id
+                JOIN users rider
+                    ON rider.user_id = b.rider_id
+                LEFT JOIN stops pickup
+                    ON pickup.stop_id = b.pickup_stop_id
+                LEFT JOIN stops dropoff
+                    ON dropoff.stop_id = b.drop_stop_id
+                WHERE r.driver_id = %s
+                ORDER BY r.departure_time DESC, b.booked_at DESC
+                """,
+                (driver_id,)
+            )
+
+            rows = cur.fetchall()
+
+    return jsonify({
+        "bookings": [
+            {
+                "booking_id": row[0],
+                "ride_id": row[1],
+                "source": row[2],
+                "destination": row[3],
+                "departure_time": row[4].isoformat(),
+                "passenger_name": row[5],
+                "passenger_email": row[6],
+                "passenger_phone": row[7],
+                "seats_booked": row[8],
+                "booking_status": row[9],
+                "booked_at": row[10].isoformat() if row[10] else None,
+                "pickup_location": row[11],
+                "drop_location": row[12]
+            }
+            for row in rows
+        ]
+    }), 200
+

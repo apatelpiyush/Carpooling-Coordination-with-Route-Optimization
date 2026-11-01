@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}My Bookings | CarpoolConnect{% endblock %}
+
+{% block content %}
+<section class="my-bookings-page">
+
+    <div class="bookings-heading">
+        <p class="dashboard-eyebrow">YOUR JOURNEYS</p>
+        <h1>My Bookings</h1>
+        <p>View and manage your reserved rides.</p>
+    </div>
+
+    <div class="bookings-summary">
+        <div>
+            <span>Total bookings</span>
+            <strong id="total-bookings">0</strong>
+        </div>
+        <div>
+            <span>Confirmed</span>
+            <strong id="confirmed-bookings">0</strong>
+        </div>
+        <div>
+            <span>Cancelled</span>
+            <strong id="cancelled-bookings">0</strong>
+        </div>
+    </div>
+
+    <div class="booking-filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="confirmed">Confirmed</button>
+        <button class="filter-btn" data-filter="cancelled">Cancelled</button>
+    </div>
+
+    <div id="bookings-message"></div>
+    <div id="bookings-list"></div>
+
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/my_bookings.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/my_bookings.js') }}"></script>
+{% endblock %}

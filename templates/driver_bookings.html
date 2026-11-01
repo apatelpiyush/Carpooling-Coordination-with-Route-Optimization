@@ -1,0 +1,48 @@
+
+{% extends "base.html" %}
+
+{% block title %}Passenger Bookings | CarpoolConnect{% endblock %}
+
+{% block content %}
+<section class="driver-bookings-page">
+
+    <div class="bookings-heading">
+        <p class="dashboard-eyebrow">DRIVER MANAGEMENT</p>
+        <h1>Passenger Bookings</h1>
+        <p>View passengers who have booked your published rides.</p>
+    </div>
+
+    <div class="bookings-summary">
+        <div>
+            <span>Total bookings</span>
+            <strong id="driver-total">0</strong>
+        </div>
+        <div>
+            <span>Confirmed</span>
+            <strong id="driver-confirmed">0</strong>
+        </div>
+        <div>
+            <span>Cancelled</span>
+            <strong id="driver-cancelled">0</strong>
+        </div>
+    </div>
+
+    <div class="booking-filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="confirmed">Confirmed</button>
+        <button class="filter-btn" data-filter="cancelled">Cancelled</button>
+    </div>
+
+    <div id="driver-bookings-message"></div>
+    <div id="driver-bookings-list"></div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/driver_bookings.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/driver_bookings.js') }}"></script>
+{% endblock %}

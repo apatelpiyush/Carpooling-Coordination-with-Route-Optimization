@@ -23,6 +23,7 @@
                 <span>Carpool<span class="brand-highlight">Connect</span></span>
             </a>
 
+                        
             <nav class="nav-links">
 
                 {% if session.get('user_id') %}
@@ -30,10 +31,15 @@
                     <a href="{{ url_for('pages.dashboard') }}">Dashboard</a>
                     <a href="{{ url_for('pages.rides_page') }}">Find Rides</a>
 
-                    <button id="theme-toggle" class="theme-toggle"
-                            type="button" aria-label="Enable dark mode">
-                        <span id="theme-icon">☾</span>
-                    </button>
+                    {% if session.get('is_driver') %}
+                        <a href="{{ url_for('pages.driver_bookings_page') }}">
+                            Passenger Bookings
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('pages.my_bookings_page') }}">
+                            My Bookings
+                        </a>
+                    {% endif %}
 
                     <button class="nav-button" onclick="logoutUser()">
                         Logout
@@ -42,13 +48,8 @@
                 {% else %}
 
                     <a href="{{ url_for('pages.home') }}">Home</a>
-
-                    <button id="theme-toggle" class="theme-toggle"
-                            type="button" aria-label="Enable dark mode">
-                        <span id="theme-icon">☾</span>
-                    </button>
-
                     <a href="{{ url_for('pages.login_page') }}">Login</a>
+
                     <a href="{{ url_for('pages.register_page') }}"
                        class="nav-cta">
                         Get Started
@@ -56,7 +57,13 @@
 
                 {% endif %}
 
+                <button id="theme-toggle" class="theme-toggle"
+                        type="button" aria-label="Enable dark mode">
+                    <span id="theme-icon">☾</span>
+                </button>
+
             </nav>
+
 
         </div>
     </header>

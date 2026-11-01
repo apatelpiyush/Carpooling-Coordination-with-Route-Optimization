@@ -1,0 +1,147 @@
+
+{% extends "base.html" %}
+
+{% block title %}Ride Details | CarpoolConnect{% endblock %}
+
+{% block content %}
+<section class="ride-details-page" data-ride-id="{{ ride_id }}">
+
+    <a href="{{ url_for('pages.rides_page') }}" class="back-link">
+        ← Back to rides
+    </a>
+
+    <div id="ride-loading" class="details-message">
+        Loading ride details...
+    </div>
+
+    <div id="ride-error" class="details-message"></div>
+
+    <div id="ride-content" hidden>
+
+        <div class="details-heading">
+            <p class="dashboard-eyebrow">RIDE INFORMATION</p>
+            <h1 id="ride-route-title"></h1>
+            <p id="ride-departure"></p>
+        </div>
+
+        <div class="details-layout">
+
+            <div class="details-main">
+
+                <section class="details-panel">
+                    <h2>Driver information</h2>
+                    <div class="detail-row">
+                        <span>Driver</span>
+                        <strong id="driver-name"></strong>
+                    </div>
+                </section>
+
+                <section class="details-panel">
+                    <h2>Vehicle information</h2>
+                    <div class="detail-grid">
+                        <div><span>Vehicle</span><strong id="vehicle-name"></strong></div>
+                        <div><span>Registration</span><strong id="vehicle-plate"></strong></div>
+                        <div><span>Color</span><strong id="vehicle-color"></strong></div>
+                        <div><span>Capacity</span><strong id="vehicle-capacity"></strong></div>
+                    </div>
+                </section>
+
+                <section class="details-panel">
+                    <h2>Published route</h2>
+                    <div id="ride-stops"></div>
+                    <div id="ride-details-map"></div>
+                </section>
+
+            </div>
+
+            <aside class="booking-panel">
+                <h2>Book this ride</h2>
+
+                <div class="booking-summary">
+                    <div>
+                        <span>Price per seat</span>
+                        <strong id="ride-price"></strong>
+                    </div>
+                    <div>
+                        <span>Available seats</span>
+                        <strong id="ride-seats"></strong>
+                    </div>
+                </div>
+
+                <form id="booking-form">
+
+                    <div class="search-field">
+                        <label for="booking-seats">Number of seats</label>
+                        <input type="number" id="booking-seats"
+                               min="1" value="1" required>
+                    </div>
+
+                    <div class="search-field">
+                        <label for="booking-pickup">Pickup location</label>
+                        <input type="text" id="booking-pickup"
+                               placeholder="Search pickup location" required>
+                        <button type="button" id="booking-pickup-search"
+                                class="small-action">
+                            Search locations
+                        </button>
+                        <div id="booking-pickup-results"
+                             class="location-results"></div>
+                        <p id="booking-pickup-selected"
+                           class="selected-location">No pickup selected.</p>
+                    </div>
+
+                    <div class="search-field">
+                        <label for="booking-drop">Drop-off location</label>
+                        <input type="text" id="booking-drop"
+                               placeholder="Search drop-off location" required>
+                        <button type="button" id="booking-drop-search"
+                                class="small-action">
+                            Search locations
+                        </button>
+                        <div id="booking-drop-results"
+                             class="location-results"></div>
+                        <p id="booking-drop-selected"
+                           class="selected-location">No drop-off selected.</p>
+                    </div>
+
+                    <div class="search-field">
+                        <label for="booking-detour">Maximum additional detour</label>
+                        <select id="booking-detour">
+                            <option value="5">5 km</option>
+                            <option value="10" selected>10 km</option>
+                            <option value="15">15 km</option>
+                            <option value="20">20 km</option>
+                        </select>
+                    </div>
+
+                    <div class="booking-total">
+                        <span>Estimated total</span>
+                        <strong id="booking-total">₹0.00</strong>
+                    </div>
+
+                    <p id="booking-message" class="booking-message"></p>
+
+                    <button type="submit" class="search-button"
+                            id="confirm-booking">
+                        Confirm booking
+                    </button>
+
+                </form>
+            </aside>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/ride_details.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='js/ride_details.js') }}"></script>
+{% endblock %}

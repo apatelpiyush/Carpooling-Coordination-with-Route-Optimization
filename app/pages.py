@@ -42,3 +42,17 @@ def ride_details_page(ride_id):
     if not session.get("user_id"):
         return redirect(url_for("pages.login_page"))
     return render_template("ride_details.html", ride_id=ride_id)
+    
+@pages.route("/my-bookings")
+def my_bookings_page():
+    if not session.get("user_id"):
+        return redirect(url_for("pages.login_page"))
+
+    return render_template("my_bookings.html")
+    
+@pages.route("/driver/bookings")
+def driver_bookings_page():
+    if not session.get("user_id"):
+        return redirect(url_for("pages.login_page"))
+
+    return render_template("driver_bookings.html")

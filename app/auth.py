@@ -87,6 +87,7 @@ def login():
 
     session.clear()
     session["user_id"] = user[0]
+    session["is_driver"] = user[4]
 
     return jsonify({
         "message": "Login successful",

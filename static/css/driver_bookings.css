@@ -1,0 +1,194 @@
+
+.driver-bookings-page {
+    width: min(950px, calc(100% - 40px));
+    margin: 45px auto 70px;
+}
+
+.bookings-heading {
+    margin-bottom: 25px;
+}
+
+.bookings-heading h1 {
+    margin: 8px 0;
+    color: var(--primary);
+    font-size: 27px;
+}
+
+.bookings-heading p:last-child {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.bookings-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 25px;
+}
+
+.bookings-summary > div {
+    padding: 17px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+}
+
+.bookings-summary span,
+.passenger-information span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.bookings-summary strong {
+    color: var(--text);
+    font-size: 22px;
+}
+
+.passenger-booking-card {
+    margin-bottom: 15px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+}
+
+.passenger-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.booking-id {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.passenger-card-header h2 {
+    margin: 9px 0 18px;
+    color: var(--text);
+    font-size: 17px;
+}
+
+.passenger-card-header h2 span {
+    color: var(--accent);
+    padding: 0 5px;
+}
+
+.booking-status {
+    padding: 6px 9px;
+    border-radius: 4px;
+    font-size: 11px;
+    text-transform: capitalize;
+}
+
+.booking-status.confirmed {
+    background: #ccfbf1;
+    color: #0f766e;
+}
+
+.booking-status.cancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.passenger-information {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 17px;
+    padding: 17px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.passenger-information strong {
+    color: var(--text);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.passenger-route-details {
+    padding-top: 12px;
+}
+
+.passenger-route-details p {
+    margin: 7px 0;
+    color: var(--muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.passenger-route-details strong {
+    color: var(--text);
+}
+
+#driver-bookings-message,
+.empty-bookings {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+@media (max-width: 600px) {
+    .bookings-summary,
+    .passenger-information {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* Booking status filter controls */
+
+.booking-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 5px 0 24px;
+    padding: 5px;
+    width: fit-content;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.filter-btn {
+    padding: 9px 17px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.filter-btn:hover {
+    background: var(--background);
+    color: var(--primary);
+}
+
+.filter-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.filter-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+    .booking-filters {
+        width: 100%;
+    }
+
+    .filter-btn {
+        flex: 1;
+        padding: 9px 8px;
+    }
+}
+
