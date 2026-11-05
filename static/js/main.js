@@ -366,3 +366,19 @@ async function publishRide(event) {
     }
 }
 
+window.addEventListener("pageshow", async (event) => {
+    if (event.persisted) {
+        try {
+            const response = await fetch("/auth/me", {
+                cache: "no-store"
+            });
+
+            if (response.status === 401) {
+                window.location.replace("/login");
+            }
+        } catch (error) {
+            console.error("Session verification failed:", error);
+            window.location.replace("/login");
+        }
+    }
+});

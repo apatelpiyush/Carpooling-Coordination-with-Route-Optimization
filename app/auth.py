@@ -103,7 +103,16 @@ def login():
 @auth.route("/logout", methods=["POST"])
 def logout():
     session.clear()
-    return jsonify({"message": "Logged out successfully"})
+
+    response = jsonify({"message": "Logged out successfully"})
+    response.delete_cookie(
+        "session",
+        path="/",
+        httponly=True,
+        samesite="Lax"
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
     
 
 @auth.route("/me", methods=["GET"])

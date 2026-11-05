@@ -14,9 +14,19 @@ def create_app():
     )
 
     app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
+
     app.register_blueprint(auth)
     app.register_blueprint(rides_bp)
     app.register_blueprint(bookings_bp)
     app.register_blueprint(pages)
-    return app
 
+    @app.after_request
+    def prevent_cache(response):
+        response.headers["Cache-Control"] = (
+            "no-store, no-cache, must-revalidate, private, max-age=0"
+        )
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+    return app

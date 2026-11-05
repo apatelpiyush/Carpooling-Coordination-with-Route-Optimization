@@ -542,6 +542,8 @@ def create_ride():
 
 @rides_bp.route("/rides", methods=["GET"])
 def search_rides():
+    if not session.get("user_id"):
+        return jsonify({"error": "Please log in first"}), 401
     source = request.args.get("source", "").strip()
     destination = request.args.get("destination", "").strip()
 
@@ -589,6 +591,8 @@ def search_rides():
 
 @rides_bp.route("/rides/match", methods=["GET"])
 def match_rides():
+    if not session.get("user_id"):
+        return jsonify({"error": "Please log in first"}), 401
     source = request.args.get("source", "").strip()
     destination = request.args.get("destination", "").strip()
 
@@ -650,6 +654,8 @@ def match_rides():
 
 @rides_bp.route("/rides/match-nearby", methods=["GET"])
 def match_nearby_rides():
+    if not session.get("user_id"):
+        return jsonify({"error": "Please log in first"}), 401
     try:
         pickup_lat = float(request.args["pickup_lat"])
         pickup_lon = float(request.args["pickup_lon"])
