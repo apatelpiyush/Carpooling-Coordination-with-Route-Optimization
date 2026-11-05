@@ -57,11 +57,9 @@ CarpoolConnect is a web-based carpool coordination application. It allows users 
 └── run.py
 ```
 
-The ZIP also contains a few legacy/empty modules and local cookie files. Do not publish cookie files or credentials.
-
 ## Prerequisites
 
-- Python 3.10 or newer (the supplied bytecode indicates Python 3.12 was used during development).
+- Python 3.10 or newer.
 - PostgreSQL.
 - The PostgreSQL `vector` extension (pgvector).
 - A browser with JavaScript enabled.
@@ -103,8 +101,6 @@ The application loads environment variables using `python-dotenv`.
 | `DB_USER` | Database user |
 | `DB_PASSWORD` | Database password |
 
-Keep secrets in a local `.env` file and never commit it.
-
 ## Important implementation notes
 
 - The booking endpoint locks the selected ride row with `SELECT ... FOR UPDATE`, validates availability, and performs seat reduction and booking insertion in the same database transaction.
@@ -113,6 +109,3 @@ Keep secrets in a local `.env` file and never commit it.
 - The notification API expects a `notifications` table and a booking-event trigger. Those objects were implemented and tested in the development database but are not included in the SQL files in this ZIP. Add the verified DDL/function/trigger to a version-controlled migration before treating the ZIP as a complete fresh-install package.
 - Nearby route matching uses vector similarity to shortlist candidates and then applies geographic route-insertion/detour calculations. The frontend's displayed route line should not be described as turn-by-turn road routing unless a road-routing provider is integrated.
 
-## Development status
-
-This documentation describes the supplied source snapshot and the features confirmed during development discussions. Verify the database migration notes and run the test plan against a clean database before making a production release.
